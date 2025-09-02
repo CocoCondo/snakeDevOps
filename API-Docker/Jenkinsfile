@@ -1,12 +1,12 @@
 pipeline {
-  agent { label 'Principal' }     // nodo built-in de Jenkins (Linux)
-  options { timestamps(); ansiColor('xterm') }
+  agent { label 'Principal' }     // nodo built-in (Linux)
+  options { timestamps() }        // removido ansiColor
 
   environment {
-    K8S_NS       = 'default'              // namespace de destino
-    MANIFEST_DIR = 'API-Docker/k8s'       // carpeta con deployment.yaml, service.yaml, configmap.yml
-    DEPLOYMENT   = 'notes1'               // nombre de tu Deployment
-    CONTAINER    = 'notes-api'            // nombre del contenedor en el Deployment
+    K8S_NS       = 'default'
+    MANIFEST_DIR = 'API-Docker/k8s'
+    DEPLOYMENT   = 'notes1'
+    CONTAINER    = 'notes-api'
   }
 
   stages {
@@ -14,7 +14,7 @@ pipeline {
       steps {
         sh '''
           echo "Workspace: $WORKSPACE"
-          test -d "$MANIFEST_DIR" || { echo "No existe $MANIFEST_DIR en $WORKSPACE"; exit 1; }
+          test -d "$MANIFEST_DIR" || { echo "No existe $MANIFEST_DIR"; exit 1; }
           kubectl version --client
           kubectl config current-context
           kubectl get nodes -o wide
@@ -43,7 +43,6 @@ pipeline {
 
   post {
     failure {
-      // Diagnóstico útil si el rollout falla
       sh '''
         echo "==== Objects ===="
         kubectl get deploy/"$DEPLOYMENT" -n "$K8S_NS" -o wide || true
@@ -55,7 +54,7 @@ pipeline {
         echo "==== Events ===="
         kubectl get events -n "$K8S_NS" --sort-by=.metadata.creationTimestamp | tail -n 200 || true
 
-        echo "==== Logs (container) ===="
+        echo "==== Logs ===="
         kubectl logs deploy/"$DEPLOYMENT" -c "$CONTAINER" -n "$K8S_NS" --tail=200 || true
       '''
     }
