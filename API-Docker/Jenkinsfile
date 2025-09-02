@@ -1,26 +1,28 @@
 pipeline {
   agent { label 'default' }
   options { timestamps() }
-  environment {
-    K8S_NS = 'default'
-  }
+  environment { K8S_NS = 'default' }
+
   stages {
-    stage('Check kube access') {
+    stage('Debug paths') {
       steps {
-        powershell '''
-          kubectl config current-context
-          kubectl get nodes -o wide
-        '''
+        powershell 'pwd; ls -Recurse -Name | Select-Object -First 50'
       }
     }
 
-    stage('Deploy to Kubernetes') {
+    stage('Deploy to K8s') {
       steps {
         powershell '''
-          kubectl apply -n %K8S_NS% -f k8s/deployment.yaml
-          kubectl apply -n %K8S_NS% -f k8s/service.yaml
-          kubectl rollout status deploy/notes1 -n %K8S_NS% --timeout=120s
-          kubectl get svc/notes1 -n %K8S_NS%
+          # Detectar dónde está la carpeta k8s (raíz o dentro de API-Docker)
+          $k8s1 = Join-Path $env:WORKSPACE 'API-Docker\\k8s'
+          $k8s2 = Join-Path $env:WORKSPACE 'k8s'
+          if (Test-Path $k8s1) { $k8s = $k8s1 }
+          elseif (Test-Path $k8s2) { $k8s = $k8s2 }
+          else { Write-Error "No se encontró la carpeta k8s en el workspace"; exit 1 }
+
+          kubectl apply -n $env:K8S_NS -f $k8s
+          kubectl rollout status deploy/notes1 -n $env:K8S_NS --timeout=120s
+          kubectl get svc notes1 -n $env:K8S_NS
         '''
       }
     }
