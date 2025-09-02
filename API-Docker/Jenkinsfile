@@ -1,51 +1,63 @@
 pipeline {
-  agent { label 'default' }
-  options { timestamps() }
-  environment { K8S_NS = 'default' }
+  agent { label 'Principal' }     // nodo built-in de Jenkins (Linux)
+  options { timestamps(); ansiColor('xterm') }
+
+  environment {
+    K8S_NS       = 'default'              // namespace de destino
+    MANIFEST_DIR = 'API-Docker/k8s'       // carpeta con deployment.yaml, service.yaml, configmap.yml
+    DEPLOYMENT   = 'notes1'               // nombre de tu Deployment
+    CONTAINER    = 'notes-api'            // nombre del contenedor en el Deployment
+  }
 
   stages {
-    stage('Build image into Minikube') {
+    stage('Check kubectl') {
       steps {
-        dir('API-Docker') {
-          powershell '''
-            # Construye la imagen DENTRO de Minikube (no precisa registry)
-            minikube image build -t notes-api:1.0 .
-          '''
-        }
+        sh '''
+          echo "Workspace: $WORKSPACE"
+          test -d "$MANIFEST_DIR" || { echo "No existe $MANIFEST_DIR en $WORKSPACE"; exit 1; }
+          kubectl version --client
+          kubectl config current-context
+          kubectl get nodes -o wide
+        '''
       }
     }
 
-    stage('Deploy to K8s') {
+    stage('Apply manifests') {
       steps {
-        dir('API-Docker') {
-          powershell '''
-            # Aplica todo lo de k8s (deployment, service, configmap.yml)
-            kubectl apply -n $env:K8S_NS -f k8s/
+        sh '''
+          kubectl apply -n "$K8S_NS" -f "$MANIFEST_DIR/"
+          kubectl rollout status deploy/"$DEPLOYMENT" -n "$K8S_NS" --timeout=300s
+        '''
+      }
+    }
 
-            # Asegura que el deployment use la imagen recién construida
-            kubectl set image deploy/notes1 notes-api=notes-api:1.0 -n $env:K8S_NS
-
-            # Espera rollout (subí a 300s si querés)
-            kubectl rollout status deploy/notes1 -n $env:K8S_NS --timeout=180s
-
-            kubectl get svc notes1 -n $env:K8S_NS -o wide
-          '''
-        }
+    stage('Show service') {
+      steps {
+        sh '''
+          kubectl get deploy/"$DEPLOYMENT" -n "$K8S_NS" -o wide
+          kubectl get svc "$DEPLOYMENT" -n "$K8S_NS" -o wide
+        '''
       }
     }
   }
 
   post {
     failure {
-      dir('API-Docker') {
-        powershell '''
-          kubectl get deploy/notes1,rs,po -l app=notes1 -n $env:K8S_NS -o wide
-          kubectl describe po -l app=notes1 -n $env:K8S_NS
-          kubectl get events -n $env:K8S_NS --sort-by=.metadata.creationTimestamp `
-            | Select-String -Pattern "notes1|Failed|Error|BackOff|Pull"
-          kubectl logs deploy/notes1 -c notes-api -n $env:K8S_NS --tail=200
-        '''
-      }
+      // Diagnóstico útil si el rollout falla
+      sh '''
+        echo "==== Objects ===="
+        kubectl get deploy/"$DEPLOYMENT" -n "$K8S_NS" -o wide || true
+        kubectl get rs,po -l app="$DEPLOYMENT" -n "$K8S_NS" -o wide || true
+
+        echo "==== Describe Pods ===="
+        kubectl describe po -l app="$DEPLOYMENT" -n "$K8S_NS" || true
+
+        echo "==== Events ===="
+        kubectl get events -n "$K8S_NS" --sort-by=.metadata.creationTimestamp | tail -n 200 || true
+
+        echo "==== Logs (container) ===="
+        kubectl logs deploy/"$DEPLOYMENT" -c "$CONTAINER" -n "$K8S_NS" --tail=200 || true
+      '''
     }
   }
 }

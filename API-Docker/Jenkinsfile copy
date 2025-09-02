@@ -1,0 +1,51 @@
+pipeline {
+  agent { label 'default' }
+  options { timestamps() }
+  environment { K8S_NS = 'default' }
+
+  stages {
+    stage('Build image into Minikube') {
+      steps {
+        dir('API-Docker') {
+          powershell '''
+            # Construye la imagen DENTRO de Minikube (no precisa registry)
+            minikube image build -t notes-api:1.0 .
+          '''
+        }
+      }
+    }
+
+    stage('Deploy to K8s') {
+      steps {
+        dir('API-Docker') {
+          powershell '''
+            # Aplica todo lo de k8s (deployment, service, configmap.yml)
+            kubectl apply -n $env:K8S_NS -f k8s/
+
+            # Asegura que el deployment use la imagen recién construida
+            kubectl set image deploy/notes1 notes-api=notes-api:1.0 -n $env:K8S_NS
+
+            # Espera rollout (subí a 300s si querés)
+            kubectl rollout status deploy/notes1 -n $env:K8S_NS --timeout=180s
+
+            kubectl get svc notes1 -n $env:K8S_NS -o wide
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    failure {
+      dir('API-Docker') {
+        powershell '''
+          kubectl get deploy/notes1,rs,po -l app=notes1 -n $env:K8S_NS -o wide
+          kubectl describe po -l app=notes1 -n $env:K8S_NS
+          kubectl get events -n $env:K8S_NS --sort-by=.metadata.creationTimestamp `
+            | Select-String -Pattern "notes1|Failed|Error|BackOff|Pull"
+          kubectl logs deploy/notes1 -c notes-api -n $env:K8S_NS --tail=200
+        '''
+      }
+    }
+  }
+}
