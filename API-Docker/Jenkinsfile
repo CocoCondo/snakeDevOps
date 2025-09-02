@@ -1,5 +1,5 @@
 pipeline {
-  agent { label 'principal' }     // nodo built-in (Linux)
+  agent { label '(built-in)' }     // nodo built-in (Linux)
   options { timestamps() }        // removido ansiColor
 
   environment {
