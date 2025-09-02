@@ -23,7 +23,8 @@ spec:
     spec:
       containers:
       - name: notes-api
-        image: notes-api:latest
+        image: notes-api:1.0.0
+        imagePullPolicy: IfNotPresent
         env:
         - name: API_TITLE
           valueFrom:
@@ -47,7 +48,8 @@ spec:
     spec:
       containers:
       - name: notes-api
-        image: notes-api:latest
+        image: notes-api:1.0.0
+        imagePullPolicy: IfNotPresent
         env:
         - name: API_TITLE
           valueFrom:
@@ -71,7 +73,8 @@ spec:
     spec:
       containers:
       - name: notes-api
-        image: notes-api:latest
+        image: notes-api:1.0.0
+        imagePullPolicy: IfNotPresent
         env:
         - name: API_TITLE
           valueFrom:

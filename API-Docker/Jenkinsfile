@@ -1,10 +1,28 @@
-pipeline{
-    agent any
-    stages {
-        stage ('run app') {
-            steps{
-                sh 'docker run -p 8000:8000 -v $(pwd)/data:/app/data --name notes1 notes-api'
-            }
-        }
+pipeline {
+  agent { label 'default' }
+  options { timestamps() }
+  environment {
+    K8S_NS = 'default'
+  }
+  stages {
+    stage('Check kube access') {
+      steps {
+        powershell '''
+          kubectl config current-context
+          kubectl get nodes -o wide
+        '''
+      }
     }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        powershell '''
+          kubectl apply -n %K8S_NS% -f k8s/deployment.yaml
+          kubectl apply -n %K8S_NS% -f k8s/service.yaml
+          kubectl rollout status deploy/notes1 -n %K8S_NS% --timeout=120s
+          kubectl get svc/notes1 -n %K8S_NS%
+        '''
+      }
+    }
+  }
 }

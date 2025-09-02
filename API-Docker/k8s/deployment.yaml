@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes1
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes1
+  template:
+    metadata:
+      labels:
+        app: notes1
+    spec:
+      containers:
+        - name: notes-api
+          # Usa la imagen que tu cluster pueda tirar (Minikube local o registry)
+          image: notes-api:1.0    # o docker.io/<tu-user>/notes-api:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          emptyDir: {}            # efímero; si querés persistencia, usamos PVC
