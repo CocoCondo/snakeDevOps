@@ -1,8 +1,10 @@
 pipeline{
     agent any
-    stage('run app'){
-        steps{
-            sh 'docker run -p 8000:8000 -v $(pwd)/data:/app/data --name notes1 notes-api'
+    stages {
+        stage ('run app') {
+            steps{
+                sh 'docker run -p 8000:8000 -v $(pwd)/data:/app/data --name notes1 notes-api'
+            }
         }
     }
 }
