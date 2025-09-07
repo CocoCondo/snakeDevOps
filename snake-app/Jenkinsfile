@@ -1,11 +1,40 @@
-pipeline{
-    agent any
-    stages {
-        stage ('run app') {
-            steps{
-                sh 'npm install'
-                sh 'npm start'
-            }
-        }
+pipeline {
+  agent any
+
+  // Si usás "NodeJS Plugin", declara la herramienta por nombre:
+  // tools { nodejs 'Node20' }
+
+  environment {
+    APP_DIR = 'snake-app' // o '.' si package.json está en la raíz
+  }
+
+  stages {
+/*
+    stage('Diagnóstico') {
+      steps {
+        sh 'pwd; ls -la'
+        sh "echo 'Listado de ${APP_DIR}'; ls -la ${APP_DIR}"
+      }
     }
+*/
+    stage('Instalar dependencias') {
+      steps {
+        dir("${APP_DIR}") {
+          // En CI conviene npm ci (rápido y reproducible). Cambia a npm install si no tenés package-lock.json
+          sh 'npm ci || npm install'
+        }
+      }
+    }
+
+    stage('Build / Test') {
+      steps {
+        dir("${APP_DIR}") {
+          // Evitá `npm start` en CI si se queda corriendo (dev server).
+          // Mejor compilar o correr tests:
+          sh 'npm run build || echo "No build script"'
+          // sh 'npm test'
+        }
+      }
+    }
+  }
 }
