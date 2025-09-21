@@ -1,13 +1,27 @@
 # --- Red dedicada ---
 resource "docker_network" "devnet" {
-  name   = var.network_name
-  labels = local.labels
+  name = var.network_name
+  dynamic "labels" {
+    for_each = local.labels
+    iterator = kv
+    content {
+      label = kv.key
+      value = kv.value
+    }
+  }
 }
 
 # --- Volúmenes para persistencia ---
 resource "docker_volume" "notes_data" {
-  name   = "notes_data"
-  labels = local.labels
+  name = "notes_data"
+  dynamic "labels" {
+    for_each = local.labels
+    iterator = kv
+    content {
+      label = kv.key
+      value = kv.value
+    }
+  }
 }
 
 # --- Imágenes ---
@@ -76,7 +90,14 @@ resource "docker_container" "nginx" {
 
   restart = "unless-stopped"
 
-  labels = local.labels
+  dynamic "labels" {
+    for_each = local.labels
+    iterator = kv
+    content {
+      label = kv.key
+      value = kv.value
+    }
+  }
 }
 
 # 2) notes-api
@@ -93,13 +114,7 @@ resource "docker_container" "notes_api" {
   }
 
   # Variables de entorno
-  dynamic "env" {
-    for_each = var.notes_env
-    content {
-      name  = env.key
-      value = env.value
-    }
-  }
+  env = [for k, v in var.notes_env : "${k}=${v}"]
 
   # Volumen para datos
   mounts {
@@ -118,7 +133,14 @@ resource "docker_container" "notes_api" {
   # }
 
   restart = "unless-stopped"
-  labels  = local.labels
+  dynamic "labels" {
+    for_each = local.labels
+    iterator = kv
+    content {
+      label = kv.key
+      value = kv.value
+    }
+  }
 
   depends_on = [docker_container.nginx]
 }
@@ -136,13 +158,7 @@ resource "docker_container" "snake_app" {
     protocol = "tcp"
   }
 
-  dynamic "env" {
-    for_each = var.snake_env
-    content {
-      name  = env.key
-      value = env.value
-    }
-  }
+  env = [for k, v in var.snake_env : "${k}=${v}"]
 
   # Healthcheck opcional (ajusta el endpoint real si existe)
   # healthcheck {
@@ -154,7 +170,14 @@ resource "docker_container" "snake_app" {
   # }
 
   restart = "unless-stopped"
-  labels  = local.labels
+  dynamic "labels" {
+    for_each = local.labels
+    iterator = kv
+    content {
+      label = kv.key
+      value = kv.value
+    }
+  }
 
   depends_on = [docker_container.nginx, docker_container.notes_api]
 }

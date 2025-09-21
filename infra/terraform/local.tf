@@ -5,5 +5,5 @@ locals {
   }
 
   # Archivo estático para Nginx (se monta como bind)
-  nginx_index_html = "${path.module}/index.html"
+  nginx_index_html = abspath("${path.module}/index.html")
 }

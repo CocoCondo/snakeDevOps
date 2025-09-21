@@ -4,8 +4,8 @@ output "nginx_url" {
 }
 
 output "notes_api_url" {
-  value       = "http://localhost:${var.notes_host_port}"
-  description = "URL de notes-api (ajusta paths /health, /list, etc.)"
+  value       = "http://localhost:${var.notes_host_port}/docs"
+  description = "URL de notes-api Swagger UI"
 }
 
 output "snake_app_url" {

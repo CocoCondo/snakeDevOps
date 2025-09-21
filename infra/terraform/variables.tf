@@ -78,7 +78,7 @@ variable "notes_host_port" {
 
 variable "notes_container_port" {
   type        = number
-  default     = 8080
+  default     = 8000
 }
 
 # snake-app: 8082 -> 8080 (ajusta si tu contenedor escucha en otro)
@@ -89,7 +89,7 @@ variable "snake_host_port" {
 
 variable "snake_container_port" {
   type        = number
-  default     = 8080
+  default     = 80
 }
 
 # --- Variables de entorno opcionales ---
