@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snake-blue
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: snake, color: blue }
+  template:
+    metadata:
+      labels: { app: snake, color: blue }
+    spec:
+      containers:
+        - name: snake-ctr
+          image: docker.io/tu_usuario_docker/snake:v1
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - configMapRef: { name: snake-config }

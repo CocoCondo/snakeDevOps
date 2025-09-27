@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: snake-config
+data:
+  TITLE: "Balada das serpentes 🐍"
+  FEATURE_FLAG_X: "false"

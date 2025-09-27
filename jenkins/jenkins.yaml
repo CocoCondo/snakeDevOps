@@ -1,0 +1,25 @@
+jenkins:
+  systemMessage: "Jenkins gestionado con JCasC"
+unclassified:
+  location:
+    url: "http://jenkins.tu-dominio/"
+jobs:
+  - script: >
+      multibranchPipelineJob('UCU-DevOps-CocoCondo-SnakeDevops') {
+        displayName('CocoCondo-SnakeDevops (Multibranch)')
+        branchSources {
+          git {
+            id('UCU-DevOps-CocoCondo-SnakeDevops-git')
+            remote('https://github.com/CocoCondo/snakeDevOps.git')
+            includes('*')
+          }
+        }
+        factory {
+          workflowBranchProjectFactory {
+            scriptPath('Jenkinsfile')
+          }
+        }
+        orphanedItemStrategy {
+          discardOldItems { numToKeep(10) }
+        }
+      }
